@@ -8,7 +8,7 @@
 		
 		function buildData(){
 			
-			var temp = g_disruptions.reduce(function(temp,d){
+			let temp = g_disruptions.reduce(function(temp,d){
 				if (!temp[d.project]){
 					temp[d.project] = [0,0,0,0,0];
 				}
@@ -18,14 +18,14 @@
 				return temp;
 			},{});
 			
-			var columns = [['Very low'],['Low'],['Medium'],['High'],['Very High']];
-			var categories = [];
+			let columns = [['Very low'],['Low'],['Medium'],['High'],['Very High']];
+			let categories = [];
 			
 			for (var i in temp){
 				for (var c=0; c<5; c++){
 					columns[c].push(temp[i][c]);
 				}
-				var project = g_projects.filter(function(p){ return i==p.url });
+				let project = g_projects.filter(function(p){ return i==p.url });
 				categories.push(project.length > 0 ? project[0].name : 'Unknown');
 			}
 			
@@ -48,7 +48,7 @@
 			        type: 'bar',
 					groups: [['Very low','Low','Medium','High','Very High']],
 					order: null,
-					onclick: function (d, element) { console.log(d); showList(d.name, categories[d.index]); }
+					onclick: function (d, element) { 'barchart click', console.log(d); showList(d, element); }
 			    },
 			    bar: {
 			        width: {
