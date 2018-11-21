@@ -1,0 +1,247 @@
+<dashboard-bar>
+
+	<div id="bar"></div>
+
+	<script>
+	
+		let self = this;
+		
+		function buildData(){
+			
+			var temp = g_disruptions.reduce(function(temp,d){
+				if (!temp[d.project]){
+					temp[d.project] = [0,0,0,0,0];
+				}
+					
+				temp[d.project][d.priority-1] += 1;
+
+				return temp;
+			},{});
+			
+			var columns = [['Very low'],['Low'],['Medium'],['High'],['Very High']];
+			var categories = [];
+			
+			for (var i in temp){
+				for (var c=0; c<5; c++){
+					columns[c].push(temp[i][c]);
+				}
+				var project = g_projects.filter(function(p){ return i==p.url });
+				categories.push(project.length > 0 ? project[0].name : 'Unknown');
+			}
+			
+			self.data = {columns: columns, categories: categories};
+			
+		}
+		
+		
+		self.on('before-mount',function(){
+			buildData();
+		});
+		
+		
+		self.on('mount',function(){
+		
+			self.chart = c3.generate({
+				bindto: '#bar',
+			    data: {
+			        columns: self.data.columns,
+			        type: 'bar',
+					groups: [['Very low','Low','Medium','High','Very High']],
+					order: null,
+					onclick: function (d, element) { console.log(d); showList(d.name, categories[d.index]); }
+			    },
+			    bar: {
+			        width: {
+			            ratio: 0.60 // this makes bar width 50% of length between ticks
+			        }
+			        // or
+			        //width: 100 // this makes bar width 100px
+			    },
+				axis: {
+					rotated: true,
+					x: {
+						type: 'category',
+						categories: self.data.categories,
+						tick: {
+							multiline: false,
+							centered: true
+						}
+					}
+				},
+				grid: {
+					y: {
+						lines: [{value:0}]
+					}
+				}
+			});
+		
+		});
+		
+		self.on('update',function(){
+			buildData();
+			self.chart.load({
+				columns: self.data.columns,
+				categories: self.data.categories
+			});
+		});
+		
+		
+		function showList(priority,project){
+		
+			g_filters.priority = ['Very low','Low','Medium','High','Very High'].indexOf(priority) + 1;
+			g_filters.project = g_projects.filter(function(p){ return p.name == project })[0].url;
+			g_filters.status = 'All';
+			g_filters.organisation = 'All';
+			bus.trigger('switch-view',{target: 'list'});
+
+		}
+	
+	
+	</script>
+
+</dashboard-bar>
+
+<dashboard-pie>
+
+	<div id="pie"></div>
+	
+	<script>
+	
+		let self = this;
+		
+		function buildData(){
+			
+			var	data = g_disruptions.reduce(function(data,d){
+				data[d.priority - 1][1] += 1;
+				return data;
+			},[['Very low',0],['Low',0],['Medium',0],['High',0],['Very high',0]]);
+			
+			self.data = {columns: data};
+			
+		}
+		
+		
+		self.on('before-mount',function(){
+			buildData();
+		});
+		
+		
+		self.on('mount',function(){
+		
+			console.log('pie data',self.data);
+		
+			self.chart = c3.generate({
+				bindto: '#pie',
+			    data: {
+			        columns: self.data.columns,
+			        type : 'donut',
+			        onclick: function (d, i) { console.log("onclick", d, i); showList(d.index);},
+			        onmouseover: function (d, i) { console.log("onmouseover", d, i); },
+			        onmouseout: function (d, i) { console.log("onmouseout", d, i); }
+			    },
+			    donut: {
+			        title: "Priority"
+			    }
+			});
+		
+		});
+		
+		self.on('update',function(){
+			buildData();
+			self.chart.load({
+				columns: self.data.columns
+			});
+		});
+		
+		
+		function showList(priority){
+		
+			g_filters.priority = priority + 1;
+			g_filters.project = 'All';
+			g_filters.organisation = 'All';
+			g_filters.status = 'All';
+			bus.trigger('switch-view',{target: 'list'});
+
+		}
+		
+	</script>
+
+</dashboard-pie>
+
+
+<dashboard class="primary-panel">
+
+	<div class="container has-margin-bottom">
+	
+		<div class="tile is-ancestor">
+			<div class="tile is-parent">
+				<div class="tile is-child">
+					<header class="is-size-4">By project</header>
+					<dashboard-bar></dashboard-bar>
+				</div>
+			</div>
+		</div>
+	
+		<div class="tile is-ancestor">
+			<div class="tile is-parent">
+				<div class="tile is-child is-8">
+					<header class="is-size-4">Start date heatmap</header>
+					<disruption-heatmap data={data.heatmap}></disruption-heatmap>
+				</div>
+				<div class="tile is-child">
+					<header class="is-size-4">By priority</header>
+					<dashboard-pie></dashboard-pie>
+				</div>
+			</div>
+		</div>
+		
+	</div>
+
+	<style scoped>
+
+		.tile header {
+			margin: 1rem 0;
+		}
+		
+		.has-margin-bottom {
+			margin-bottom: 5rem;
+		}
+
+	</style>
+
+	<script>
+
+		let self = this;
+		self.data = {}
+
+		self.on('before-mount', function(){
+			buildData();
+		});
+		
+		function buildData(){
+		
+			var data = g_disruptions.reduce(function(data,d){
+				data.push({today: d.start_date});
+				return data;
+			},[]);
+
+			self.data.heatmap = data;
+
+			self.data.new = g_disruptions.sort(function(a,b){
+				if (a.updated_on < b.updated_on) return -1;
+				if (a.update_on > b.updated_on) return 1;
+				return 0;
+			}).slice(0,5);
+			
+		}
+		
+		
+		bus.on('sync-end', function(){
+			buildData();
+			self.update();
+		});
+
+
+	</script>
+
+</dashboard>

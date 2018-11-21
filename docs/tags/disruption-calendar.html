@@ -1,0 +1,240 @@
+<entry-article>
+
+  <article class="card" onclick={view}>
+    <header>
+      <p>
+		<span class="has-text-weight-bold">{opts.item.name}</span><br/>
+		<span class="is-italic">{opts.item.project_name}</span>
+      </p>
+    </header>
+    <footer>
+      <a href="#" onclick={}><i class="fas fa-newspaper has-text-grey-light"></i></a>
+      <a href="#" onclick={}><i class="fas fa-database has-text-grey-light"></i></a>
+      <a href="#" onclick={}><i class="fas fa-envelope has-text-grey-light"></i></a>
+	  <a href="#" onclick={}><i class="fas fa-broadcast-tower has-text-grey-light"></i></a>
+	  <a href="#" onclick={}><i class="fab fa-facebook has-text-grey-light"></i></a>
+	  <i class="fas fa-exchange-alt {opts.item.detours.length==0 ? 'has-text-danger' : 'has-text-success'}"></i>
+	</footer>
+  </article>
+  
+  <style scoped>
+	
+	article:hover {
+		cursor: pointer; 
+	}
+	
+  </style>
+
+  <script>
+
+    view(e){
+      bus.trigger('show_disruption',e.item);
+    }
+
+  </script>
+
+</entry-article>
+
+<disruption-calendar>
+
+  <disruption-filter></disruption-filter>
+
+  <div id="calendar">
+    <table id="table-headers">
+      <thead>
+        <tr>
+          <th width="14.25%">Sunday</th>
+          <th width="14.25%">Monday</th>
+          <th width="14.25%">Tuesday</th>
+          <th width="14.25%">Wednesday</th>
+          <th width="14.25%">Thursday</th>
+          <th width="14.25%">Friday</th>
+          <th width="14.25%">Saturday</th>
+        </tr>
+      </thead>
+    </table>
+    <div id="calendar-days">
+      <table>
+        <tbody>
+          <tr each={calendar.weeks} class="week {current-week: current} {previous-week: previous}">
+            <td width="14.25%" each={day, index in days} class="day {past:!day.current} {today:day.today} {firstday:day.day==1}" data-date-iso={day.iso} data-date-local={day.local}>
+              <div class="daynum has-text-right"><span if={day.day==1||index==0}>{day.month_name}&nbsp;</span>{day.day}</div>
+              <entry-article each={day.entries} item={this} id={id} show={(parent.priority==0||priority==parent.priority)&&(parent.status=='All'||status==parent.status)&&(parent.project=='All'||project==parent.project)&&(parent.organisation=='All'||organisation==parent.organisation)}></entry-article>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <style scoped>
+  
+	#calendar {
+	  margin-top: 2rem;
+	  padding: 0.25rem 1.5rem;
+	}
+
+	#calendar table {
+	  width: 100%;
+	}
+	
+	#table-headers {
+	  border-bottom: 2px solid #888;
+	}
+
+	#calendar table thead tr th {
+	  text-align: center;
+	  font-weight: normal;
+	  font-size: 1.5rem;
+	}
+
+	#calendar-days {
+	  padding: 0;
+	  margin: 0;
+	  overflow-y: auto;
+	  background: #fff;
+	}
+
+	#calendar-days table {
+	  border: 1px solid #bbb;
+	  background: none;
+	}
+
+	td.day {
+	  border-bottom: 1px solid #bbb;
+	  border-right: 1px solid #bbb;
+	  overflow-y: auto;
+	  padding: 0.5rem;
+	}
+	
+	td.day.past {
+	  background: #ddd;
+	}
+	
+	td.day.past article {
+	  background: rgba(255,255,255,0.5);
+	}
+
+	article.card {
+	  padding: .25rem .5rem;
+	  margin-bottom: 0.5rem;
+	}
+
+	.daynum {
+	  color: #888;
+	}
+
+	.day.today div.daynum, .day.firstday div.daynum {
+	  font-weight: bold;
+	}
+
+	.day.today {
+	  background: rgba(50,115,220,0.25);
+	}	
+  
+  </style>
+
+  <script>
+
+  let self = this;
+  self.status = 'All';
+  self.priority = 0;
+  self.project = 'All';
+  self.organisation = 'All';
+  self.today = new Date();
+  self.currentMonth = self.today.getMonth();
+  self.currentYear = self.today.getFullYear();
+  self.months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  self.calendar = { weeks: [] }
+
+  self.on('before-mount',function(){
+
+	self.calendar = buildCalendar(self.currentMonth, self.currentYear, g_disruptions);
+    console.log('calendar',self.calendar);
+    self.update();
+
+  });
+
+  self.on('mount',function(){
+
+    let p = document.querySelector('#calendar-days');
+    let b = p.getBoundingClientRect();
+    p.style.height = (window.innerHeight - b.top - 5).toString() + 'px';
+    console.log('calendar',p.style.height,b);
+
+  });
+
+  self.on('updated',function(){
+    console.log('scrolling into view');
+    document.querySelector('tr.previous-week').scrollIntoView();
+  });
+
+  function buildCalendar(month, year, data) {
+
+      let today = new Date();
+      let start = new Date();
+      start.setDate(start.getDate() - start.getDay() - 28);
+      console.log('start',start.getFullYear(),start.getMonth(),start.getDate());
+      console.log('today',start.getFullYear(),start.getMonth(),start.getDate());
+
+      let cj = {
+        year: year,
+        month: month,
+        month_name: self.months[month],
+        weeks: []
+      }
+
+      for (let w=0; w <=11; w++){
+        let week = {days: []};
+        for (let d=0; d <=6; d++){
+          let day = {
+            day: start.getDate(),
+            month: start.getMonth(),
+            month_name: self.months[start.getMonth()],
+            year: start.getFullYear(),
+            YYYYMMDD: start.getFullYear().toString() + '-' + (start.getMonth() + 1).toString() + '-' + start.getDate().toString(),
+            local: start.toDateString(),
+            iso: start.toISOString(),
+            utc: start.valueOf(),
+            current: start >= today ? 1 : 0,
+            today: start.getFullYear()==today.getFullYear() && start.getMonth()==today.getMonth() && start.getDate()==today.getDate() ? 1 : 0,
+            entries: getEntries(data,start.getDate(),start.getMonth(),start.getFullYear())
+          };
+          week.days.push(day);
+          if (day.today) week.current = 1;
+          start.setDate(start.getDate() + 1);
+        }
+        if (week.current) cj.weeks[cj.weeks.length-1].previous = 1;
+        cj.weeks.push(week);
+      }
+
+      return cj;
+
+  }
+
+  function getEntries(data,day,month,year){
+
+    let entries = data.filter(function(d){
+      let d_date = new Date(d.start_date);
+      return d_date.getFullYear()==year && d_date.getMonth()==month && d_date.getDate()==day ? true : false;
+    });
+
+    return entries;
+
+  }
+  
+	bus.on('sync-end', function(){
+		self.calendar = buildCalendar(self.currentMonth, self.currentYear, g_disruptions);
+		self.update();
+	});
+	
+	bus.on('filter-items', function(data){
+		for (var p in data){
+			self[p] = data[p];
+		}
+		self.update();
+	});
+
+  </script>
+
+</disruption-calendar>

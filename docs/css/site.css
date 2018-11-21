@@ -1,0 +1,68 @@
+	html, body, main {
+		overflow: hidden;
+		font-size: 10pt !important;
+	}
+	
+	table#disruptions_table {
+		border-bottom: 1px solid #cccccc;
+	}
+	
+	tr.priority-1 {
+		border-left: 10px solid #1f77b4;
+	}
+	tr.priority-2 {
+		border-left: 10px solid #ff7f0e;
+	}
+	tr.priority-3 {
+		border-left: 10px solid #2ca02c;
+	}
+	tr.priority-4 {
+		border-left: 10px solid #d62728;
+	}
+	tr.priority-5 {
+		border-left: 10px solid #9467bd;
+	}
+	
+	.navbar-end button {
+		margin-left: 0.25rem;
+	}
+	
+	.has-space-left {
+		margin-left: 1rem;
+	}
+	
+	.has-space-right {
+		margin-right: 1rem;
+	}
+	
+	tr.disruption:hover {
+		cursor: pointer;
+	}
+		
+	disruption-list, disruption-calendar, dashboard, .primary-panel {
+		position: fixed;
+		left: 0;
+		top: 5rem;
+		z-index: 0;
+		width: 100%;
+		bottom: 10px;
+		background: #fff;
+		height: 100%;
+		padding-bottom: 10rem;
+	}
+
+	disruption-list.active, disruption-calendar.active, dashboard.active, .primary-panel.active {
+		z-index: 9;
+	}
+	
+	.is-visibility-published {
+		border-top-color: #1B2631;
+	}
+	
+	dashboard {
+		overflow-y: auto !important;
+	}
+	
+	nav#site-head {
+		border-bottom: 1px solid #ededed;
+	}

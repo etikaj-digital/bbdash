@@ -1,0 +1,83 @@
+	<raw-content>
+		<span class="content"></span>
+		
+		<script>
+			if (opts.content) this.root.innerHTML = opts.content
+		</script>
+		
+	</raw-content>
+
+	
+	<fmt-date>
+			
+		<span>{formatted_date}</span>
+	
+		let self = this;
+		
+		let newdate = moment(opts.date);
+		self.formatted_date = newdate.format(self.opts.template);
+		self.update();
+	
+	</fmt-date>
+	
+	<toast>
+		<div class="notification is-info toast {pop: popped}">{message}</div>
+		
+		<style scoped>
+		.toast {
+			display: none; 
+			position: fixed; 
+			z-index: 99; 
+			left: 50%; 
+			bottom: 30px; 
+		}
+
+		.toast.pop {
+			display: block;
+			-webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+			animation: fadein 0.5s, fadeout 0.5s 2.5s;
+		}
+
+		/* Animations to fade the toast in and out */
+		@-webkit-keyframes fadein {
+			from {bottom: 0; opacity: 0;} 
+			to {bottom: 30px; opacity: 1;}
+		}
+
+		@keyframes fadein {
+			from {bottom: 0; opacity: 0;}
+			to {bottom: 30px; opacity: 1;}
+		}
+
+		@-webkit-keyframes fadeout {
+			from {bottom: 30px; opacity: 1;} 
+			to {bottom: 0; opacity: 0;}
+		}
+
+		@keyframes fadeout {
+			from {bottom: 30px; opacity: 1;}
+			to {bottom: 0; opacity: 0;}
+		}
+		
+		</style>
+		
+		<script>
+		
+		var self = this;
+		self.popped = false;
+		
+		bus.on('popToast',function(message){
+			console.log('toast!',message);
+			self.message = message;
+			self.popped = true;
+			self.update();
+			window.setTimeout(function(){
+				self.popped = false;
+				self.message = '';
+				self.update();
+			},3000);
+		});
+		
+		</script>
+	
+	</toast>

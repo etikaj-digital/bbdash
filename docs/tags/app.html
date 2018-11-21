@@ -1,0 +1,131 @@
+<refresh-button>
+		  
+	<a class="button {is-loading: syncing}" onclick={refresh} id="btn_refresh">
+		Refresh
+	</a>
+	
+	<script>
+	
+		var self = this;
+		self.syncing = false;
+	
+		refresh(e){
+			bus.trigger('sync');
+		}
+		
+		bus.on('sync-start',function(){
+			self.syncing = true;
+			self.update();
+		});
+		
+		bus.on('sync-end',function(){
+			bus.trigger('popToast','Disruption data synchronised');
+			self.syncing = false;
+			self.update();
+		});
+	
+	</script>
+
+</refresh-button>
+
+<app>
+
+  <nav id="site-head" class="navbar" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a class="navbar-item" href="" onclick={dashboard}>
+      <h1 class="is-size-2 is-primary">Disruptions</h1>
+    </a>
+
+    <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+
+  <div id="navbarBasicExample" class="navbar-menu">
+    <div class="navbar-start">
+      <a class="navbar-item is-tab {is-active:display=='calendar'}" href="calendar" onclick={calendar}>
+        Calendar
+      </a>
+
+      <a class="navbar-item is-tab {is-active:display=='list'}" onclick={list}>
+        List
+      </a>
+
+      <div class="navbar-item has-dropdown is-hoverable">
+        <a class="navbar-link">
+          More
+        </a>
+
+        <div class="navbar-dropdown">
+          <a class="navbar-item">
+            About
+          </a>
+          <a class="navbar-item">
+            Jobs
+          </a>
+          <a class="navbar-item">
+            Contact
+          </a>
+          <hr class="navbar-divider">
+          <a class="navbar-item">
+            Report an issue
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="navbar-end">
+      <div class="navbar-item">
+        <div class="buttons">
+          <a class="button is-light">
+            Log in
+          </a>
+		  <refresh-button></refresh-button>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<main id="main">
+  <dashboard class={active: display=='dashboard'}></dashboard>
+  <disruption-list class={active: display=='list'}></disruption-list>
+  <disruption-calendar class={active: display=='calendar'}></disruption-calendar>
+  <disruption-detail></disruption-detail>
+  <toast></toast>
+</main>
+
+<script>
+
+  var self = this;
+  self.display = 'dashboard';
+
+  dashboard(e){
+    e.preventDefault();
+    self.display = 'dashboard';
+    self.update();
+  }
+
+  calendar(e){
+    e.preventDefault();
+    self.display = 'calendar';
+    self.update();
+  }
+
+  list(e){
+	console.log('list!');
+    e.preventDefault();
+    self.display = 'list';
+    self.update();
+  }
+  
+  bus.on('switch-view',function(data){
+	self.display = data.target;
+	self.update();
+  });
+
+</script>
+
+</app>

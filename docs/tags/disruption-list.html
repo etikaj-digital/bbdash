@@ -1,0 +1,166 @@
+
+	 
+	<update-status>
+	
+		<span if={opts.status!=null} class="tag {class} has-space-left">{opts.status}</span>
+
+		<script>
+
+		if (this.opts.status=='new') {
+			this.class = 'is-success';
+		} else if (this.opts.status=='updated') {
+			this.class = 'is-info';
+		} else {
+			this.class = '';
+		}
+		
+		</script>
+
+	</update-status>
+	
+	<disruption-filter>
+		<nav class="navbar" role="navigation" aria-label="main navigation">
+			<div class="navbar-end">
+				<span>
+					<span class="has-text-weight-bold has-space-right">Organisation</span>
+					<select ref="organisation" name="organisation" class="select" onchange={filter}>
+						<option value='All'>All organisations</option>
+						<option each={g_organisations} value={url} selected={name==g_filters.organisation}>{name}</option>
+					</select>
+				</span>
+				<span>
+					<span class="has-text-weight-bold has-space-left has-space-right">Project</span>
+					<select ref="project" name="project" class="select" onchange={filter}>
+						<option value='All'>All projects</option>
+						<option each={g_projects} value="{url}" show={g_filters.organisation=='All'||organisations.includes(g_filters.organisation)} selected={url==g_filters.project}>{name}</option>
+					</select>
+				</span>
+				<span>
+					<span class="has-text-weight-bold has-space-left has-space-right">Priority</span>
+					<select ref="priority" name="priority" class="select" onchange={filter}>
+						<option each={desc,index in priorities} value={index} selected={index==g_filters.priority}>{desc}</option>
+					</select>
+				</span>
+				<span class="has-space-left has-space-right">
+					<button name="status" value="Today" onclick={filter} class="button is-link" disabled={g_filters.status=='Today'}>Today</button>
+					<button name="status" value="Future" onclick={filter} class="button is-link" disabled={g_filters.status=='Future'}>Future</button>
+					<button name="status" value="All" onclick={filter} class="button is-link" disabled={g_filters.status=='All'}>All</button>
+					<button onclick={copier} class="button is-success">Copy</button>
+				</span>
+			</div>
+		</nav>
+		
+		<script>
+		
+		var self = this;
+		self.sync_in_progress = false;
+		self.priorities = ['All','Very low','Low','Medium','High','Very High'];
+		self.sync_icon = null;
+		
+		filter(e){
+		
+			let property = e.target.name;
+			let value = e.target.value;
+			
+			g_filters[property] = value;
+			
+			// if organisation has been changed then reset project to all
+			if (property=='organisation') g_filters.project = 'All';
+			
+			localStorage['filters'] = JSON.stringify(g_filters);
+			
+			self.update();
+			bus.trigger('filter-items', g_filters);
+				
+		}
+		
+		</script>
+	
+	</disruption-filter>
+	
+	<disruption-list class="primary-panel">
+	
+		<disruption-filter></disruption-filter>
+		
+		<table class="table is-hoverable" id="disruptions_table-header" border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top; padding-bottom:0; margin-bottom:0" width="100%">
+			<thead>
+				<tr>
+					<th width="60%">What</th>
+					<th width="20%">When</th>
+					<th width="20%">Who</th>
+				</tr>
+			</thead>
+		</table>
+		
+		<div id="disruptions_table-wrapper" style="padding: 0; margin: 0; overflow-y: auto">
+		
+		<table class="table is-hoverable" id="disruptions_table" border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top;" width="100%">
+            <!-- start disruption -->
+            <tbody>
+				<tr each={g_disruptions} show={(g_filters.priority==0||priority==g_filters.priority)&&(g_filters.status=='All'||status==g_filters.status)&&(g_filters.project=='All'||project==g_filters.project)&&(g_filters.organisation=='All'||organisation==g_filters.organisation)} class="disruption priority-{priority}">
+					<td width="60%"><div>
+						<div style="display:inline-block; width: 2rem; text-align: center; vertical-align: top">
+							<input type="checkbox" name="copy" value={id}>
+						</div>
+						<div style="display:inline-block" onclick={show}>
+							<span class="has-text-weight-bold">{name}</span><update-status if={update_status!=null} status={update_status}></update-status><br/>{location}
+						</div>
+					</td>
+					<td width="20%"><fmt-date date={start_date} template="ddd D MMM YY"></fmt-date> -<br/><fmt-date date={end_date} template="ddd D MMM YY"></fmt-date</td>
+					<td width="20%">{project_name}</td>
+				</tr>
+            </tbody>
+			<!-- end disruption -->
+		</table>
+		
+		</div>
+		
+		<script>
+		
+		var self = this;
+		
+		self.on('mount', function(){
+			let dt = document.getElementById('disruptions_table-wrapper');
+			let box = dt.getBoundingClientRect();
+			dt.style.height = (window.innerHeight - box.top - 10).toString() + 'px';
+		});
+		
+		
+		copier(e){
+			e.preventDefault();
+
+			let copyText = document.getElementById("copytext");
+			let checked = document.querySelectorAll('input[name="copy"]');
+			let copy = '';
+			let cc = 0;
+			checked.forEach(function(c){ 
+				if (c.checked) {
+					let d = self.disruptions.filter(function(d) { return d.id==c.value })[0];
+					copy += '\n\n' + d.name + '\n\n' + d.location + '\n\n' + d.description;
+					cc++;
+					c.checked = false;
+				}
+			});
+
+			clipboard.writeText(copy);
+			bus.trigger('popToast', cc.toString() + ' ' + (cc==1 ? 'Disruption' : 'Disruptions') + ' copied to clipboard');
+		}
+		
+		show(e){
+			e.preventDefault();
+			console.log('showing',e.item);
+			bus.trigger('show_disruption',e.item);
+		}
+		
+		bus.on('filter-items', function(data){
+			self.update();
+		});
+		
+		bus.on('sync-end',function(){
+			self.update();
+		});
+
+		
+		</script>
+	
+	</disruption-list>
